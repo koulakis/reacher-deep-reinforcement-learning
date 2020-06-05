@@ -44,6 +44,8 @@ def run_environment(
         agent_parameters_path: an optional path to load the agent parameters from
         random_agent: if true, agent(s) use a random policy
         seed: seed for the environment; if not set, it will be picked randomly
+        environment_port: the port used from python to communicate with the C# environment backend. By using different
+            values, one can run multiple environments in parallel.
     """
     env = UnityEnvironmentToGymWrapper(
         agent_type=agent_type,
