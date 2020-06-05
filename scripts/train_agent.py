@@ -17,7 +17,8 @@ def train(
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         env_seed: int = random.randint(0, int(1e6)),
         environment_port: Optional[int] = None,
-        device: str = 'cpu'):
+        device: str = 'cpu',
+        gamma: float = 0.99):
     """Train an agent in the reacher environment."""
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -36,7 +37,14 @@ def train(
     if input_path:
         model = PPO.load(input_path, env=env)
     else:
-        model = PPO(MlpPolicy, env, verbose=1, tensorboard_log=str(tensorboard_log_path), device=device)
+        model = PPO(
+            MlpPolicy,
+            env,
+            verbose=1,
+            tensorboard_log=str(tensorboard_log_path),
+            device=device,
+            gamma=gamma
+        )
 
     model.learn(
         total_timesteps=total_timesteps,
