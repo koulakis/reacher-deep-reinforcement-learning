@@ -7,8 +7,8 @@ from enum import Enum
 import numpy as np
 import typer
 import torch
-
 from unityagents import UnityEnvironment
+from stable_baselines3.a2c import A2C
 
 from scripts.definitions import ROOT_DIR
 
@@ -34,14 +34,22 @@ class RandomAgent:
         self.num_agents = num_agents
         self.action_size = action_size
 
-    def act(self, state: Optional[np.ndarray] = None) -> np.ndarray:
+    def act(self, state: np.ndarray) -> np.ndarray:
         actions = np.random.randn(self.num_agents, self.action_size)
         return np.clip(actions, -1, 1)
 
 
+class A2CAgent:
+    def __init__(self, parameters_path: str = 'reacher_a2c'):
+        self.model = A2C.load(parameters_path)
+
+    def act(self, state: np.ndarray) -> np.ndarray:
+        return self.model.predict(state)[0]
+
+
 def run_environment(
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
-        agent_parameters_path: Optional[Path] = None,
+        agent_parameters_path: Optional[str] = None,
         random_agent: bool = False
 ):
     """Run the reacher environment and visualize the actions of the agents.
@@ -62,17 +70,19 @@ def run_environment(
     num_agents = len(env_info.agents)
     action_size = brain.vector_action_space_size
 
-    agent: Optional[Union[RandomAgent]] = None
     if random_agent:
         agent = RandomAgent(num_agents=num_agents, action_size=action_size)
+    else:
+        agent = A2CAgent(agent_parameters_path)
+
     scores = np.zeros(num_agents)
 
     while True:
-        actions = agent.act()
+        actions = agent.act(env_info.vector_observations[0])
         env_info = env.step(actions)[brain_name]
         dones = env_info.local_done
         scores += env_info.rewards
-        time.sleep(0.01)
+        time.sleep(0.05)
         if np.any(dones):
             break
     print('Total score (averaged over agents) this episode: {}'.format(np.mean(scores)))
