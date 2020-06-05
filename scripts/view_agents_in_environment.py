@@ -1,12 +1,10 @@
 from typing import Optional
-import random
 import time
 
 import numpy as np
 import typer
 import torch
-from unityagents import UnityEnvironment
-from stable_baselines3.a2c import A2C
+from stable_baselines3.ppo import PPO
 
 from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent
 
@@ -26,7 +24,7 @@ class RandomAgent:
 
 class A2CAgent:
     def __init__(self, parameters_path: str = 'reacher_a2c'):
-        self.model = A2C.load(parameters_path)
+        self.model = PPO.load(parameters_path)
 
     def act(self, state: np.ndarray) -> np.ndarray:
         return self.model.predict(state)[0]
@@ -36,7 +34,8 @@ def run_environment(
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         agent_parameters_path: Optional[str] = None,
         random_agent: bool = False,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        environment_port: Optional[int] = None
 ):
     """Run the reacher environment and visualize the actions of the agents.
 
@@ -46,7 +45,13 @@ def run_environment(
         random_agent: if true, agent(s) use a random policy
         seed: seed for the environment; if not set, it will be picked randomly
     """
-    env = UnityEnvironmentToGymWrapper(agent_type=agent_type, seed=seed, train_mode=False)
+    env = UnityEnvironmentToGymWrapper(
+        agent_type=agent_type,
+        seed=seed,
+        train_mode=False,
+        no_graphics=False,
+        environment_port=environment_port
+    )
     number_of_agents = env.number_of_agents
     action_size = env.action_space.shape[0]
 
