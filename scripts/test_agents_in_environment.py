@@ -2,6 +2,7 @@ from typing import Optional, Union
 from pathlib import Path
 import random
 import time
+from enum import Enum
 
 import numpy as np
 import typer
@@ -11,7 +12,20 @@ from unityagents import UnityEnvironment
 
 from scripts.definitions import ROOT_DIR
 
-DEFAULT_ENVIRONMENT_EXECUTABLE_PATH = str(ROOT_DIR / 'unity_reacher_environment/Reacher.x86_64')
+
+class SingleOrMultiAgent(str, Enum):
+    single_agent = 'single'
+    multi_agent = 'multi'
+
+
+def get_environment_path(agent: SingleOrMultiAgent) -> str:
+    sub_paths_mapping = {
+        SingleOrMultiAgent.single_agent: 'unity_reacher_environment_single_agent/Reacher.x86_64',
+        SingleOrMultiAgent.multi_agent: 'unity_reacher_environment_multi_agent/Reacher.x86_64'
+    }
+    return str(ROOT_DIR / sub_paths_mapping[agent])
+
+
 DEVICE = torch.device('cpu')
 
 
@@ -26,20 +40,20 @@ class RandomAgent:
 
 
 def run_environment(
-        environment_path: str = DEFAULT_ENVIRONMENT_EXECUTABLE_PATH,
+        agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         agent_parameters_path: Optional[Path] = None,
         random_agent: bool = False
 ):
     """Run the reacher environment and visualize the actions of the agents.
 
     Args:
-        environment_path: path of the executable which runs the banana environment
+        agent_type: choice between single and multi agent environments
         agent_parameters_path: an optional path to load the agent parameters from
+        random_agent: if true, agent(s) use a random policy
     """
     seed = random.randint(0, int(1e6))
-    print(environment_path)
 
-    env = UnityEnvironment(file_name=environment_path, seed=seed)
+    env = UnityEnvironment(file_name=get_environment_path(agent_type), seed=seed)
 
     brain_name = env.brain_names[0]
     brain = env.brains[brain_name]
