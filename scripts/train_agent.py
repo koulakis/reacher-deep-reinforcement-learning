@@ -11,19 +11,19 @@ EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
 
 
 def train(
-        experiment_name: str,
+        experiment_name: str = typer.Option(...),
         total_timesteps: int = 500000,
         input_path: Optional[str] = None,
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         env_seed: int = random.randint(0, int(1e6)),
-        tensorboard_log: Optional[str] = None,
         environment_port: Optional[int] = None,
-        device: str = 'cuda'):
+        device: str = 'cpu'):
     """Train an agent in the reacher environment."""
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
     eval_path = experiment_path / 'eval'
-    for path in [experiment_path, model_path, eval_path]:
+    tensorboard_log_path = experiment_path / 'tensorboard_logs'
+    for path in [experiment_path, model_path, eval_path, tensorboard_log_path]:
         path.mkdir(exist_ok=True, parents=True)
 
     env = UnityEnvironmentToGymWrapper(
@@ -36,7 +36,7 @@ def train(
     if input_path:
         model = PPO.load(input_path, env=env)
     else:
-        model = PPO(MlpPolicy, env, verbose=1, tensorboard_log=tensorboard_log, device=device)
+        model = PPO(MlpPolicy, env, verbose=1, tensorboard_log=str(tensorboard_log_path), device=device)
 
     model.learn(
         total_timesteps=total_timesteps,
