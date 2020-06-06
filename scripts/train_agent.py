@@ -3,6 +3,7 @@ from typing import Optional
 
 from stable_baselines3.ppo import MlpPolicy, PPO
 import typer
+from torch import nn
 
 from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent
 from reacher.definitions import ROOT_DIR
@@ -18,7 +19,8 @@ def train(
         env_seed: int = random.randint(0, int(1e6)),
         environment_port: Optional[int] = None,
         device: str = 'cpu',
-        gamma: float = 0.99):
+        gamma: float = 0.99,
+        learning_rate: float = 5e-5):
     """Train an agent in the reacher environment."""
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -37,13 +39,18 @@ def train(
     if input_path:
         model = PPO.load(input_path, env=env)
     else:
+        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=[dict(vf=[128, 128, 128], pi=[128, 128, 128])])
+
         model = PPO(
             MlpPolicy,
             env,
             verbose=1,
             tensorboard_log=str(tensorboard_log_path),
             device=device,
-            gamma=gamma
+            gamma=gamma,
+            policy_kwargs=policy_kwargs,
+            target_kl=0.2,
+            learning_rate=learning_rate
         )
 
     model.learn(
