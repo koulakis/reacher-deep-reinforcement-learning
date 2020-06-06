@@ -20,13 +20,17 @@ def train(
         environment_port: Optional[int] = None,
         device: str = 'cpu',
         gamma: float = 0.99,
-        learning_rate: float = 5e-5):
+        learning_rate: float = 5e-5,
+        target_kl: float = 0.1,
+        policy_layers_comma_sep: str = '128,128,128',
+        value_layers_comma_sep: str = '128,128,128'
+):
     """Train an agent in the reacher environment."""
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
     eval_path = experiment_path / 'eval'
     tensorboard_log_path = experiment_path / 'tensorboard_logs'
-    for path in [experiment_path, model_path, eval_path, tensorboard_log_path]:
+    for path in [experiment_path, eval_path, tensorboard_log_path]:
         path.mkdir(exist_ok=True, parents=True)
 
     env = UnityEnvironmentToGymWrapper(
@@ -39,7 +43,10 @@ def train(
     if input_path:
         model = PPO.load(input_path, env=env)
     else:
-        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=[dict(vf=[128, 128, 128], pi=[128, 128, 128])])
+        policy_layers = [int(layer_width) for layer_width in policy_layers_comma_sep.split(',')]
+        value_layers = [int(layer_width) for layer_width in value_layers_comma_sep.split(',')]
+
+        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=[dict(vf=value_layers, pi=policy_layers)])
 
         model = PPO(
             MlpPolicy,
@@ -49,7 +56,7 @@ def train(
             device=device,
             gamma=gamma,
             policy_kwargs=policy_kwargs,
-            target_kl=0.2,
+            target_kl=target_kl,
             learning_rate=learning_rate
         )
 
