@@ -17,13 +17,15 @@ def train(
         input_path: Optional[str] = None,
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         env_seed: int = random.randint(0, int(1e6)),
-        environment_port: Optional[int] = None,
+        environment_port: int = 5005,
         device: str = 'cuda',
         gamma: float = 0.99,
         learning_rate: float = 5e-5,
         target_kl: float = 0.1,
         policy_layers_comma_sep: str = '128,128,128',
-        value_layers_comma_sep: str = '128,128,128'
+        value_layers_comma_sep: str = '128,128,128',
+        eval_freq: int = 100000,
+        n_eval_episodes: int = 5
 ):
     """Train an agent in the reacher environment.
 
@@ -45,6 +47,10 @@ def train(
             hyper-parameter.
         policy_layers_comma_sep: a sequence of layer width for the policy network as a comma-separated list
         value_layers_comma_sep: a sequence of layer width for the value network as a comma-separated list
+        eval_freq: the number of steps after which a validation round will take place. Whenever there is an improvement,
+            the best model will be saved under the 'eval' directory in the experiment. Available only for the single
+            agent environment.
+        n_eval_episodes: number of episodes run during evaluation, available only for the single agent environment
     """
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -53,18 +59,16 @@ def train(
     for path in [experiment_path, eval_path, tensorboard_log_path]:
         path.mkdir(exist_ok=True, parents=True)
 
+    environment_parameters = dict(
+        seed=env_seed,
+        no_graphics=True,
+        train_mode=True,
+        environment_port=environment_port)
+
     if agent_type == SingleOrMultiAgent.single_agent:
-        env = UnitySingleAgentEnvironmentWrapper(
-            seed=env_seed,
-            no_graphics=True,
-            train_mode=True,
-            environment_port=environment_port)
+        env = UnitySingleAgentEnvironmentWrapper(**environment_parameters)
     else:
-        env = UnityMultiAgentEnvironmentWrapper(
-            seed=env_seed,
-            no_graphics=True,
-            train_mode=True,
-            environment_port=environment_port)
+        env = UnityMultiAgentEnvironmentWrapper(**environment_parameters)
 
     if input_path:
         model = PPO.load(input_path, env=env)
@@ -86,13 +90,20 @@ def train(
             learning_rate=learning_rate
         )
 
+    evaluation_parameters = (
+        dict(
+            eval_env=env,
+            eval_freq=eval_freq,
+            n_eval_episodes=n_eval_episodes,
+            eval_log_path=str(eval_path))
+        if agent_type == SingleOrMultiAgent.single_agent
+        else dict())
+
     model.learn(
         total_timesteps=total_timesteps,
-        # eval_env=env,
-        # eval_freq=100000,
-        # n_eval_episodes=5,
-        # eval_log_path=str(eval_path)
+        **evaluation_parameters
     )
+
     model.save(str(model_path))
 
 
