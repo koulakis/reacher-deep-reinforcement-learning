@@ -13,12 +13,12 @@ EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
 
 def train(
         experiment_name: str = typer.Option(...),
-        total_timesteps: int = 500000,
+        total_timesteps: int = 3000000,
         input_path: Optional[str] = None,
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
         env_seed: int = random.randint(0, int(1e6)),
         environment_port: Optional[int] = None,
-        device: str = 'cpu',
+        device: str = 'cuda',
         gamma: float = 0.99,
         learning_rate: float = 5e-5,
         target_kl: float = 0.1,
