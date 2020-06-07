@@ -6,7 +6,8 @@ import typer
 import torch
 from stable_baselines3.ppo import PPO
 
-from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent
+from reacher.unity_environment_wrappers import \
+    UnitySingleAgentEnvironmentWrapper, UnityMultiAgentEnvironmentWrapper, SingleOrMultiAgent
 
 
 DEVICE = torch.device('cpu')
@@ -22,7 +23,7 @@ class RandomAgent:
         return np.clip(actions, -1, 1)
 
 
-class A2CAgent:
+class PPOAgent:
     def __init__(self, parameters_path: str = 'reacher_a2c'):
         self.model = PPO.load(parameters_path)
 
@@ -47,20 +48,24 @@ def run_environment(
         environment_port: the port used from python to communicate with the C# environment backend. By using different
             values, one can run multiple environments in parallel.
     """
-    env = UnitySingleAgentEnvironmentWrapper(
-        agent_type=agent_type,
+    environment_parameters = dict(
         seed=seed,
         train_mode=False,
         no_graphics=False,
         environment_port=environment_port
     )
+    env = (
+        UnitySingleAgentEnvironmentWrapper(**environment_parameters)
+        if agent_type == SingleOrMultiAgent.single_agent
+        else UnityMultiAgentEnvironmentWrapper(**environment_parameters))
+
     number_of_agents = env.num_envs
     action_size = env.action_space.shape[0]
 
     if random_agent:
         agent = RandomAgent(number_of_agents=number_of_agents, action_size=action_size)
     else:
-        agent = A2CAgent(agent_parameters_path)
+        agent = PPOAgent(agent_parameters_path)
 
     score = 0
     state = env.reset()
@@ -71,7 +76,11 @@ def run_environment(
         time.sleep(0.005)
         if np.any(done):
             break
-    print(f'Total score this episode: {score}')
+
+    if agent_type == SingleOrMultiAgent.single_agent:
+        print(f'Total score this episode: {score}')
+    else:
+        print(f'Average total score this episode: {np.array(score).mean()}')
 
     env.close()
 
