@@ -5,7 +5,7 @@ from stable_baselines3.ppo import MlpPolicy, PPO
 import typer
 from torch import nn
 
-from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent
+from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent, UnityEnviromentToVecEnvWrapper
 from reacher.definitions import ROOT_DIR
 
 EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
@@ -53,12 +53,19 @@ def train(
     for path in [experiment_path, eval_path, tensorboard_log_path]:
         path.mkdir(exist_ok=True, parents=True)
 
-    env = UnityEnvironmentToGymWrapper(
-        agent_type=agent_type,
-        seed=env_seed,
-        no_graphics=True,
-        train_mode=True,
-        environment_port=environment_port)
+    if agent_type == SingleOrMultiAgent.single_agent:
+        env = UnityEnvironmentToGymWrapper(
+            agent_type=agent_type,
+            seed=env_seed,
+            no_graphics=True,
+            train_mode=True,
+            environment_port=environment_port)
+    else:
+        env = UnityEnviromentToVecEnvWrapper(
+            seed=env_seed,
+            no_graphics=True,
+            train_mode=True,
+            environment_port=environment_port)
 
     if input_path:
         model = PPO.load(input_path, env=env)
@@ -82,10 +89,10 @@ def train(
 
     model.learn(
         total_timesteps=total_timesteps,
-        eval_env=env,
-        eval_freq=100000,
-        n_eval_episodes=5,
-        eval_log_path=str(eval_path)
+        # eval_env=env,
+        # eval_freq=100000,
+        # n_eval_episodes=5,
+        # eval_log_path=str(eval_path)
     )
     model.save(str(model_path))
 
