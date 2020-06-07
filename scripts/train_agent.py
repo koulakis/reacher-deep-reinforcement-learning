@@ -5,7 +5,7 @@ from stable_baselines3.ppo import MlpPolicy, PPO
 import typer
 from torch import nn
 
-from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent, UnityEnviromentToVecEnvWrapper
+from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent, UnityMultiAgentEnvironmentWrapper
 from reacher.definitions import ROOT_DIR
 
 EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
@@ -54,14 +54,13 @@ def train(
         path.mkdir(exist_ok=True, parents=True)
 
     if agent_type == SingleOrMultiAgent.single_agent:
-        env = UnityEnvironmentToGymWrapper(
-            agent_type=agent_type,
+        env = UnitySingleAgentEnvironmentWrapper(
             seed=env_seed,
             no_graphics=True,
             train_mode=True,
             environment_port=environment_port)
     else:
-        env = UnityEnviromentToVecEnvWrapper(
+        env = UnityMultiAgentEnvironmentWrapper(
             seed=env_seed,
             no_graphics=True,
             train_mode=True,

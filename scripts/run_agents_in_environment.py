@@ -6,7 +6,7 @@ import typer
 import torch
 from stable_baselines3.ppo import PPO
 
-from reacher.unity_env_wrappers import UnityEnvironmentToGymWrapper, SingleOrMultiAgent
+from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent
 
 
 DEVICE = torch.device('cpu')
@@ -47,14 +47,14 @@ def run_environment(
         environment_port: the port used from python to communicate with the C# environment backend. By using different
             values, one can run multiple environments in parallel.
     """
-    env = UnityEnvironmentToGymWrapper(
+    env = UnitySingleAgentEnvironmentWrapper(
         agent_type=agent_type,
         seed=seed,
         train_mode=False,
         no_graphics=False,
         environment_port=environment_port
     )
-    number_of_agents = env.number_of_agents
+    number_of_agents = env.num_envs
     action_size = env.action_space.shape[0]
 
     if random_agent:
