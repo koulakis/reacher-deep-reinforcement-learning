@@ -25,7 +25,27 @@ def train(
         policy_layers_comma_sep: str = '128,128,128',
         value_layers_comma_sep: str = '128,128,128'
 ):
-    """Train an agent in the reacher environment."""
+    """Train an agent in the reacher environment.
+
+    Args:
+        experiment_name: the name of the experiment which will be used to create a directory under 'experiments' and
+            store there all training artifacts along with the final and best models
+        total_timesteps: the number of timestamps to run till stopping training
+        input_path: in case provided, the model from that path is loaded - this is used to continue a previous training
+        agent_type: specifies whether to use the environment with one agent or the environment with 20 agents
+        env_seed: a seed for the environment random initialization - if not set, defaults to random
+        environment_port: this is the port used by the unity environment to communicate with the C# backend. One needs
+            to set different ports to different environments which run in parallel.
+        device: the device used to train the model, can be 'cpu' or 'cuda:x'
+        gamma: the discount rate applied to future actions
+        learning_rate: the learning rate used by the policy and value network optimizer
+        target_kl: an upper limit to the target KL divergence. This violates a bit the idea of PPO to reduce the
+            amount of hyper-parameters but can still be useful since the agents can still experience catastrophic
+            forgetting if this value becomes to high. The idea is to use it as a safe-guard, rather than a tunable
+            hyper-parameter.
+        policy_layers_comma_sep: a sequence of layer width for the policy network as a comma-separated list
+        value_layers_comma_sep: a sequence of layer width for the value network as a comma-separated list
+    """
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
     eval_path = experiment_path / 'eval'
