@@ -1,7 +1,9 @@
 import random
 from typing import Optional
+from enum import Enum
 
-from stable_baselines3.ppo import MlpPolicy, PPO
+import stable_baselines3.ppo as ppo
+import stable_baselines3.a2c as a2c
 import typer
 from torch import nn
 
@@ -9,6 +11,11 @@ from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrappe
 from reacher.definitions import ROOT_DIR
 
 EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
+
+
+class RLAlgorithm(str, Enum):
+    ppo = 'ppo'
+    a2c = 'a2c'
 
 
 def train(
@@ -25,7 +32,8 @@ def train(
         policy_layers_comma_sep: str = '128,128,128',
         value_layers_comma_sep: str = '128,128,128',
         eval_freq: int = 100000,
-        n_eval_episodes: int = 5
+        n_eval_episodes: int = 5,
+        rl_algorithm: RLAlgorithm = RLAlgorithm.ppo
 ):
     """Train an agent in the reacher environment.
 
@@ -51,6 +59,7 @@ def train(
             the best model will be saved under the 'eval' directory in the experiment. Available only for the single
             agent environment.
         n_eval_episodes: number of episodes run during evaluation, available only for the single agent environment
+        rl_algorithm: the algorithm used to train an agent
     """
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -70,24 +79,31 @@ def train(
     else:
         env = UnityMultiAgentEnvironmentWrapper(**environment_parameters)
 
+    if rl_algorithm == RLAlgorithm.ppo:
+        algorithm_class = ppo.PPO
+        policy = ppo.MlpPolicy
+    else:
+        algorithm_class = a2c.A2C
+        policy = a2c.MlpPolicy
+
     if input_path:
-        model = PPO.load(input_path, env=env)
+        model = algorithm_class.load(input_path, env=env)
     else:
         policy_layers = [int(layer_width) for layer_width in policy_layers_comma_sep.split(',')]
         value_layers = [int(layer_width) for layer_width in value_layers_comma_sep.split(',')]
 
         policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=[dict(vf=value_layers, pi=policy_layers)])
 
-        model = PPO(
-            MlpPolicy,
+        model = algorithm_class(
+            policy,
             env,
             verbose=1,
             tensorboard_log=str(tensorboard_log_path),
             device=device,
             gamma=gamma,
             policy_kwargs=policy_kwargs,
-            target_kl=target_kl,
-            learning_rate=learning_rate
+            learning_rate=learning_rate,
+            **(dict(target_kl=target_kl) if rl_algorithm == RLAlgorithm.ppo else dict())
         )
 
     evaluation_parameters = (
