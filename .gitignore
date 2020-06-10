@@ -4,3 +4,4 @@ unity-environment.log
 __pycache__
 unity_reacher_environment_multi_agent 
 unity_reacher_environment_single_agent
+.ipynb_checkpoints
