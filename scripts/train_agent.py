@@ -4,10 +4,12 @@ from enum import Enum
 
 import stable_baselines3.ppo as ppo
 import stable_baselines3.a2c as a2c
+import stable_baselines3.td3 as td3
 import typer
 from torch import nn
 
-from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent, UnityMultiAgentEnvironmentWrapper
+from reacher.unity_environment_wrappers import \
+    UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent, UnityMultiAgentEnvironmentWrapper
 from reacher.definitions import ROOT_DIR
 
 EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
@@ -16,6 +18,14 @@ EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
 class RLAlgorithm(str, Enum):
     ppo = 'ppo'
     a2c = 'a2c'
+    td3 = 'td3'
+
+
+algorithm_and_policy = {
+    RLAlgorithm.ppo: (ppo.PPO, ppo.MlpPolicy),
+    RLAlgorithm.a2c: (a2c.A2C, a2c.MlpPolicy),
+    RLAlgorithm.td3: (td3.TD3, td3.MlpPolicy)
+}
 
 
 def train(
@@ -79,12 +89,7 @@ def train(
     else:
         env = UnityMultiAgentEnvironmentWrapper(**environment_parameters)
 
-    if rl_algorithm == RLAlgorithm.ppo:
-        algorithm_class = ppo.PPO
-        policy = ppo.MlpPolicy
-    else:
-        algorithm_class = a2c.A2C
-        policy = a2c.MlpPolicy
+    algorithm_class, policy = algorithm_and_policy[rl_algorithm]
 
     if input_path:
         model = algorithm_class.load(input_path, env=env)
@@ -92,7 +97,8 @@ def train(
         policy_layers = [int(layer_width) for layer_width in policy_layers_comma_sep.split(',')]
         value_layers = [int(layer_width) for layer_width in value_layers_comma_sep.split(',')]
 
-        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=[dict(vf=value_layers, pi=policy_layers)])
+        net_arch = policy_layers if rl_algorithm == RLAlgorithm.td3 else [dict(vf=value_layers, pi=policy_layers)]
+        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
 
         model = algorithm_class(
             policy,
