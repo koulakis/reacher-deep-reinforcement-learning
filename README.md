@@ -28,7 +28,7 @@ The goal is to keep touching the ball as long as possible during an episode of 1
 
 ## Solution
 The problem is solved with all A2C, PPO and TD3 using the [stable baselines framework](https://stable-baselines3.readthedocs.io/en/master/).
- For more details and a comparison of the algorithms' behavior look in the [corresponding report](<tbd>). 
+ For more details and a comparison of the algorithms' behavior look in the [corresponding report](https://github.com/koulakis/reacher-deep-reinforcement-learning/blob/master/Report.ipynb). 
 
 ## Setup project
 To setup the project follow those steps:
