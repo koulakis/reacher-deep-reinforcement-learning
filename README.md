@@ -19,15 +19,15 @@ The goal is to keep touching the ball as long as possible during an episode of 1
 - Actions:
   - 4 continuous variables, corresponding to torque applicable to two joints with values in [-1.0, 1.0]
 - Goal:
-  - Get an average score of at least 30 over 100 consecutive episodes
+  - Get an average score of at least +30 over 100 consecutive episodes
   
 - Environments:
     Two environments are available, one with a single agent and one with 20 agents. The evaluation for the 20 agents
-    environment differs in that the reward of each episode is the average of the agent rewards. In training the only
+    environment differs in that the reward of each episode is the average of all agent rewards. In training the only
     difference is that one can practically simulate 20 environments in one to speed up exploration. 
 
 ## Solution
-The problem is solved with A2C, PPO and TD3 using the [stable baselines framework](https://stable-baselines3.readthedocs.io/en/master/).
+The problem is solved with all A2C, PPO and TD3 using the [stable baselines framework](https://stable-baselines3.readthedocs.io/en/master/).
  For more details and a comparison of the algorithms' behavior look in the [corresponding report](<tbd>). 
 
 ## Setup project
@@ -60,17 +60,19 @@ The project comes along with some pre-trained agents, scripts to test them and t
 ### Scripts
 - `train_agent.py`: This one is used to train an agent. The parameter `experiment-name` is used to name your agent and
     the script will create by default a directory under `experiments` with the same name. The trained agent parameters
-    will be saved there in the end of the training and during training several metrics are logged to a tensorflow events file
+    will be saved there in the end of the training and during training several metrics are logged to a  tfevents file
     under the same directory. Here is an example call:
-    ```python scripts/train_agent.py --device 'cuda:0' --double-dqn --experiment-name my_fancy_agent_using_double_dqn```
+    ```python scripts/train_agent.py --experiment-name td3_rl_0_001 --agent-type single --learning-rate 0.001 --rl-algorithm td3 --total-timesteps 500000 --environment-port 5005```
     
     To monitor the metrics one can launch a tensorboard server with:
     ```tensorboard --logdir experiments```
     This will read the metrics of all experiments and make the available under `localhost:6006`
     
+    One can run multiple trainings in parallel by using different ports per environment with the `environment-port` flag.
+    
 - `test_agent_in_environment`: This script can be used to test an agent on a given environment. As mentioned above, one
 can access the saved agent models inside the sub-folders of `experiments`. An example usage:
-    ```python scripts/test_agent_in_environment.py --agent-parameters-path experiments/dqn_training/checkpoint.pth```
+    ```python scripts/run_agents_in_environment.py --agent-type multi --agent-parameters-path experiments/ppo_multi_agent_lr_0_00003/model.zip --environment-port 5007```
     
 ### Pre-trained models
 Under the `experiments` directory there are several pre-trained agents one can used to run in the environment. Some
@@ -79,6 +81,7 @@ examples of models which have solved the environment are:
 - Best A2C model: a2c_lr_0_0001/tensorboard_logs/A2C_1
 - Best PPO model: ppo_multi_agent_lr_0_00003/tensorboard_logs/PPO_1
 - Best PPO model trained with a single agent: ppo_large_128_128_128_lr_0_00005_3M_steps/tensorboard_logs/PPO_1
+- Best TD3 model trained with a single agent: td3_0_001/tensorboard_logs/TD3_1
 
 ## References
 Given that this project is an assignment of an online course, it has been influenced heavily by code provided by
