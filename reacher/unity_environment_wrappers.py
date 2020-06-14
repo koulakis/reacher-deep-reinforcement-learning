@@ -94,6 +94,7 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
     def __init__(
             self,
             *args,
+            n_envs: Optional[int] = None,
             train_mode: bool = True,
             seed: Optional[int] = None,
             environment_port: Optional[int] = None,
@@ -106,6 +107,9 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
         Args:
             *args: arguments which are directly passed to the Unity environment. This is supposed to make the
                 the initialization of the wrapper very similar to the initialization of the Unity environment.
+            n_envs: the number of agents used during training. This is applicable only in multi agent training and the
+                maximum number of agents is 20. In fact all 20 agents of the unity environment will be active but only
+                the first 'n_envs' will take active part in training.
             train_mode: toggle to set the unity environment to train mode
             seed: sets the seed of the environment - if not given, a random seed will be used
             environment_port: port of the environment, used to be able to run multiple environment concurrently
@@ -121,17 +125,19 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
         self.action_space, self.observation_space, self.reward_range = _environment_specs(self.brain)
 
         self.num_envs = len(self._parse_brain_info(
-            self.unity_env.reset(train_mode=self.train_mode)[self.brain_name])[1])
+            self.unity_env.reset(train_mode=self.train_mode)[self.brain_name],
+            n_envs)[1])
 
         super().__init__(self.num_envs, self.observation_space, self.action_space)
 
         self.episode_steps = 0
         self.episode_rewards = np.zeros(self.num_envs)
         self.actions = None
+        self.n_envs = n_envs
 
     def reset(self):
         brain_info = self.unity_env.reset(train_mode=self.train_mode)[self.brain_name]
-        new_states, _, dones = self._parse_brain_info(brain_info)
+        new_states, _, dones = self._parse_brain_info(brain_info, n_envs=self.n_envs)
 
         self.episode_steps = 0
         self.episode_rewards = np.zeros(self.num_envs)
@@ -139,11 +145,16 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
         return new_states
 
     def step_async(self, actions) -> None:
-        self.actions = actions
+        if self.n_envs:
+            zero_padded_actions = np.zeros((20, actions.shape[1]), dtype=np.float32)
+            zero_padded_actions[:self.n_envs] = actions
+            self.actions = zero_padded_actions
+        else:
+            self.actions = actions
 
     def step_wait(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[Dict[str, Any]]]:
         brain_info = self.unity_env.step(self.actions)[self.brain_name]
-        states, rewards, dones = self._parse_brain_info(brain_info)
+        states, rewards, dones = self._parse_brain_info(brain_info, n_envs=self.n_envs)
 
         self.episode_rewards += rewards
         self.episode_steps += 1
@@ -183,9 +194,14 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
         pass
 
     @staticmethod
-    def _parse_brain_info(info: BrainInfo) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _parse_brain_info(info: BrainInfo, n_envs: Optional[int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract the states, rewards and dones information from an environment brain."""
-        return info.vector_observations, np.array(info.rewards), np.array(info.local_done)
+        if n_envs:
+            return info.vector_observations[:n_envs], \
+                   np.array(info.rewards)[:n_envs], \
+                   np.array(info.local_done)[:n_envs]
+        else:
+            return info.vector_observations, np.array(info.rewards), np.array(info.local_done)
 
 
 def _setup_unity_environment(

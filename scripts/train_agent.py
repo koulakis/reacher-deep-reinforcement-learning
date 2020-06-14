@@ -43,7 +43,8 @@ def train(
         value_layers_comma_sep: str = '128,128,128',
         eval_freq: int = 100000,
         n_eval_episodes: int = 5,
-        rl_algorithm: RLAlgorithm = RLAlgorithm.ppo
+        rl_algorithm: RLAlgorithm = RLAlgorithm.ppo,
+        n_envs: Optional[int] = None
 ):
     """Train an agent in the reacher environment.
 
@@ -70,6 +71,9 @@ def train(
             agent environment.
         n_eval_episodes: number of episodes run during evaluation, available only for the single agent environment
         rl_algorithm: the algorithm used to train an agent
+        n_envs: the number of agents used during training. This is applicable only in multi agent training and the
+            maximum number of agents is 20. In fact all 20 agents of the unity environment will be active but only
+            the first 'n_envs' will take active part in training.
     """
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -87,7 +91,7 @@ def train(
     if agent_type == SingleOrMultiAgent.single_agent:
         env = UnitySingleAgentEnvironmentWrapper(**environment_parameters)
     else:
-        env = UnityMultiAgentEnvironmentWrapper(**environment_parameters)
+        env = UnityMultiAgentEnvironmentWrapper(n_envs=n_envs, **environment_parameters)
 
     algorithm_class, policy = algorithm_and_policy[rl_algorithm]
 
