@@ -7,7 +7,9 @@ import stable_baselines3.a2c as a2c
 import stable_baselines3.td3 as td3
 import stable_baselines3.sac as sac
 import typer
+from stable_baselines3.common.noise import NormalActionNoise
 from torch import nn
+import numpy as np
 
 from reacher.unity_environment_wrappers import \
     UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent, UnityMultiAgentEnvironmentWrapper
@@ -58,8 +60,10 @@ def train(
         td3_sac_buffer_size: Optional[int] = None,
         sac_tau: Optional[float] = None,
         sac_train_freq: Optional[int] = None,
-        sac_gradient_steps: Optional[int] = None,
-        td3_sac_learning_starts: Optional[int] = None
+        td3_sac_gradient_steps: Optional[int] = None,
+        td3_sac_learning_starts: Optional[int] = None,
+        td3_noise_type: Optional[str] = None,
+        td3_noise_std: Optional[float] = None
 ):
     """Train an agent in the reacher environment.
 
@@ -141,8 +145,22 @@ def train(
                 buffer_size=td3_sac_buffer_size,
                 tau=sac_tau,
                 train_freq=sac_train_freq,
-                gradient_steps=sac_gradient_steps,
+                gradient_steps=td3_sac_gradient_steps,
                 learning_starts=td3_sac_learning_starts
+            )
+        elif rl_algorithm == RLAlgorithm.td3:
+            action_shape = (env.num_envs, env.action_space.shape[0])
+            action_noise = (
+                NormalActionNoise(
+                    np.zeros(action_shape, dtype=np.float32),
+                    td3_noise_std * np.ones(action_shape, dtype=np.float32))
+                if td3_noise_type == 'normal'
+                else None)
+            algorithm_specific_parameters = remove_none_entries(dict(
+                buffer_size=td3_sac_buffer_size,
+                gradient_steps=td3_sac_gradient_steps,
+                learning_starts=td3_sac_learning_starts,
+                action_noise=action_noise)
             )
         else:
             algorithm_specific_parameters = dict()
@@ -156,7 +174,7 @@ def train(
             gamma=gamma,
             policy_kwargs=policy_kwargs,
             learning_rate=learning_rate,
-            batch_size=batch_size,
+            **(dict(batch_size=batch_size) if batch_size else dict()),
             **(dict(n_steps=n_steps) if n_steps else dict()),
             **remove_none_entries(algorithm_specific_parameters)
         )

@@ -20,7 +20,7 @@ def run_trainings(
             ppo_a2c_gae_lambda=0.9,
             ppo_n_epochs=20,
             learning_rate=3e-5,
-            ppo_clip_range=0.4,
+            ppo_clip_range=0.2,
             policy_layers_comma_sep='256,256',
             value_layers_comma_sep='256,256',
             log_std_init=None,
@@ -31,7 +31,21 @@ def run_trainings(
     elif algorithm == RLAlgorithm.a2c:
         raise NotImplementedError
     elif algorithm == RLAlgorithm.td3:
-        raise NotImplementedError
+        train(
+            experiment_name=experiment_name,
+            agent_type=SingleOrMultiAgent.single_agent,
+            rl_algorithm=algorithm,
+            total_timesteps=int(1e6),
+            gamma=0.98,
+            td3_sac_buffer_size=200000,
+            td3_sac_learning_starts=10000,
+            td3_noise_type='normal',
+            td3_noise_std=0.1,
+            learning_rate=1e-3,
+            policy_layers_comma_sep='400,300',
+            value_layers_comma_sep='400,300',
+            environment_port=port
+        )
     elif algorithm == RLAlgorithm.sac:
         train(
             experiment_name=experiment_name,
@@ -44,11 +58,12 @@ def run_trainings(
             gamma=0.98,
             sac_tau=0.02,
             sac_train_freq=64,
-            sac_gradient_steps=64,
+            td3_sac_gradient_steps=64,
             td3_sac_learning_starts=10000,
             log_std_init=-3,
             policy_layers_comma_sep='400,300',
-            value_layers_comma_sep='400,300'
+            value_layers_comma_sep='400,300',
+            environment_port=port
         )
     else:
         # noinspection PyUnresolvedReferences
