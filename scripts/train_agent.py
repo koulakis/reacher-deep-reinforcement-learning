@@ -5,6 +5,7 @@ from enum import Enum
 import stable_baselines3.ppo as ppo
 import stable_baselines3.a2c as a2c
 import stable_baselines3.td3 as td3
+import stable_baselines3.sac as sac
 import typer
 from torch import nn
 
@@ -19,12 +20,14 @@ class RLAlgorithm(str, Enum):
     ppo = 'ppo'
     a2c = 'a2c'
     td3 = 'td3'
+    sac = 'sac'
 
 
 algorithm_and_policy = {
     RLAlgorithm.ppo: (ppo.PPO, ppo.MlpPolicy),
     RLAlgorithm.a2c: (a2c.A2C, a2c.MlpPolicy),
-    RLAlgorithm.td3: (td3.TD3, td3.MlpPolicy)
+    RLAlgorithm.td3: (td3.TD3, td3.MlpPolicy),
+    RLAlgorithm.sac: (sac.SAC, sac.MlpPolicy)
 }
 
 
@@ -38,13 +41,25 @@ def train(
         device: str = 'cuda',
         gamma: float = 0.99,
         learning_rate: float = 5e-5,
-        target_kl: float = 0.1,
         policy_layers_comma_sep: str = '128,128,128',
         value_layers_comma_sep: str = '128,128,128',
         eval_freq: int = 100000,
         n_eval_episodes: int = 5,
         rl_algorithm: RLAlgorithm = RLAlgorithm.ppo,
-        n_envs: Optional[int] = None
+        n_envs: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        n_steps: Optional[int] = None,
+        ppo_target_kl: Optional[float] = 0.1,
+        ppo_a2c_gae_lambda: float = 0.95,
+        ppo_n_epochs: int = 10,
+        ppo_clip_range: float = 0.2,
+        log_std_init: Optional[float] = None,
+        ppo_a2c_ortho_init: Optional[bool] = None,
+        td3_sac_buffer_size: Optional[int] = None,
+        sac_tau: Optional[float] = None,
+        sac_train_freq: Optional[int] = None,
+        sac_gradient_steps: Optional[int] = None,
+        td3_sac_learning_starts: Optional[int] = None
 ):
     """Train an agent in the reacher environment.
 
@@ -60,7 +75,7 @@ def train(
         device: the device used to train the model, can be 'cpu' or 'cuda:x'
         gamma: the discount rate applied to future actions
         learning_rate: the learning rate used by the policy and value network optimizer
-        target_kl: an upper limit to the target KL divergence. This violates a bit the idea of PPO to reduce the
+        ppo_target_kl: an upper limit to the target KL divergence. This violates a bit the idea of PPO to reduce the
             amount of hyper-parameters but can still be useful since the agents can still experience catastrophic
             forgetting if this value becomes to high. The idea is to use it as a safe-guard, rather than a tunable
             hyper-parameter.
@@ -74,6 +89,8 @@ def train(
         n_envs: the number of agents used during training. This is applicable only in multi agent training and the
             maximum number of agents is 20. In fact all 20 agents of the unity environment will be active but only
             the first 'n_envs' will take active part in training.
+        batch_size: the batch size used during training
+        n_steps: number of steps run during rollout
     """
     experiment_path = EXPERIMENTS_DIR / experiment_name
     model_path = experiment_path / 'model'
@@ -101,8 +118,34 @@ def train(
         policy_layers = [int(layer_width) for layer_width in policy_layers_comma_sep.split(',')]
         value_layers = [int(layer_width) for layer_width in value_layers_comma_sep.split(',')]
 
-        net_arch = policy_layers if rl_algorithm == RLAlgorithm.td3 else [dict(vf=value_layers, pi=policy_layers)]
-        policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
+        net_arch = (
+            policy_layers
+            if rl_algorithm in [RLAlgorithm.td3, RLAlgorithm.sac]
+            else [dict(vf=value_layers, pi=policy_layers)])
+
+        policy_kwargs = remove_none_entries(dict(
+            activation_fn=nn.ReLU,
+            net_arch=net_arch,
+            log_std_init=log_std_init,
+            ortho_init=ppo_a2c_ortho_init)
+        )
+
+        if rl_algorithm == RLAlgorithm.ppo:
+            algorithm_specific_parameters = dict(
+                target_kl=ppo_target_kl,
+                gae_lambda=ppo_a2c_gae_lambda,
+                n_epochs=ppo_n_epochs,
+                clip_range=ppo_clip_range)
+        elif rl_algorithm == RLAlgorithm.sac:
+            algorithm_specific_parameters = dict(
+                buffer_size=td3_sac_buffer_size,
+                tau=sac_tau,
+                train_freq=sac_train_freq,
+                gradient_steps=sac_gradient_steps,
+                learning_starts=td3_sac_learning_starts
+            )
+        else:
+            algorithm_specific_parameters = dict()
 
         model = algorithm_class(
             policy,
@@ -113,7 +156,9 @@ def train(
             gamma=gamma,
             policy_kwargs=policy_kwargs,
             learning_rate=learning_rate,
-            **(dict(target_kl=target_kl) if rl_algorithm == RLAlgorithm.ppo else dict())
+            batch_size=batch_size,
+            **(dict(n_steps=n_steps) if n_steps else dict()),
+            **remove_none_entries(algorithm_specific_parameters)
         )
 
     evaluation_parameters = (
@@ -131,6 +176,10 @@ def train(
     )
 
     model.save(str(model_path))
+
+
+def remove_none_entries(d):
+    return {k: v for k, v in list(d.items()) if v is not None}
 
 
 if __name__ == '__main__':
