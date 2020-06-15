@@ -34,13 +34,13 @@ def run_trainings(
             agent_type=SingleOrMultiAgent.multi_agent,
             rl_algorithm=algorithm,
             n_envs=4,
-            total_timesteps=int(3e6),
+            total_timesteps=int(5e6),
             n_steps=8,
             gamma=0.99,
             ppo_a2c_gae_lambda=0.9,
             learning_rate=3e-4,
-            policy_layers_comma_sep='64,64',
-            value_layers_comma_sep='64,64',
+            policy_layers_comma_sep='64,64,64',
+            value_layers_comma_sep='64,64,64',
             environment_port=port
         )
     elif algorithm == RLAlgorithm.td3:
