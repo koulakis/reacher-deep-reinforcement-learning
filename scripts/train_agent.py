@@ -63,7 +63,9 @@ def train(
         td3_sac_gradient_steps: Optional[int] = None,
         td3_sac_learning_starts: Optional[int] = None,
         td3_noise_type: Optional[str] = None,
-        td3_noise_std: Optional[float] = None
+        td3_noise_std: Optional[float] = None,
+        use_sde: Optional[bool] = None,
+        sde_sample_freq: Optional[int] = None
 ):
     """Train an agent in the reacher environment.
 
@@ -165,6 +167,13 @@ def train(
         else:
             algorithm_specific_parameters = dict()
 
+        model_optional_parameters = remove_none_entries(dict(
+            batch_size=batch_size,
+            n_steps=n_steps,
+            use_sde=use_sde,
+            sde_sample_freq=sde_sample_freq
+        ))
+
         model = algorithm_class(
             policy,
             env,
@@ -174,8 +183,7 @@ def train(
             gamma=gamma,
             policy_kwargs=policy_kwargs,
             learning_rate=learning_rate,
-            **(dict(batch_size=batch_size) if batch_size else dict()),
-            **(dict(n_steps=n_steps) if n_steps else dict()),
+            **model_optional_parameters,
             **remove_none_entries(algorithm_specific_parameters)
         )
 

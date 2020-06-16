@@ -26,7 +26,10 @@ def run_trainings(
             log_std_init=None,
             ppo_a2c_ortho_init=None,
             ppo_target_kl=None,
-            environment_port=port
+            environment_port=port,
+
+            use_sde=True,
+            sde_sample_freq=4
         )
     elif algorithm == RLAlgorithm.a2c:
         train(
@@ -40,7 +43,9 @@ def run_trainings(
             learning_rate=3e-4,
             policy_layers_comma_sep='64,64',
             value_layers_comma_sep='64,64',
-            environment_port=port
+            environment_port=port,
+
+            use_sde=True
         )
     elif algorithm == RLAlgorithm.td3:
         train(
@@ -75,7 +80,9 @@ def run_trainings(
             log_std_init=-3,
             policy_layers_comma_sep='400,300',
             value_layers_comma_sep='400,300',
-            environment_port=port
+            environment_port=port,
+
+            use_sde=True
         )
     else:
         # noinspection PyUnresolvedReferences
