@@ -1,6 +1,5 @@
 import warnings
 
-
 from stable_baselines3.common.env_checker import check_env
 
 from reacher.unity_environment_wrappers import UnitySingleAgentEnvironmentWrapper
