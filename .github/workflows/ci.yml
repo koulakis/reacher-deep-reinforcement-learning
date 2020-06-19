@@ -22,6 +22,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         pip install .
+        wget https://s3-us-west-1.amazonaws.com/udacity-drlnd/P2/Reacher/one_agent/Reacher_Linux.zip
+        unzip Reacher_Linux.zip
+        mv Reacher_Linux unity_reacher_environment_single_agent
+
     - name: Lint with flake8
       run: |
         flake8
