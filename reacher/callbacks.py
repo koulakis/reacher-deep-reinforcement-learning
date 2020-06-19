@@ -1,4 +1,4 @@
-from typing import Union, Callable, Tuple
+from typing import Union, Tuple
 from pathlib import Path
 
 import torch
