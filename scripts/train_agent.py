@@ -8,12 +8,14 @@ import stable_baselines3.td3 as td3
 import stable_baselines3.sac as sac
 import typer
 from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.vec_env import VecNormalize
 from torch import nn
 import numpy as np
 
 from reacher.unity_environment_wrappers import \
     UnitySingleAgentEnvironmentWrapper, SingleOrMultiAgent, UnityMultiAgentEnvironmentWrapper
 from reacher.definitions import ROOT_DIR
+from reacher.callbacks import ReacherEvaluationCallback
 
 EXPERIMENTS_DIR = ROOT_DIR / 'experiments'
 
@@ -46,7 +48,7 @@ def train(
         policy_layers_comma_sep: str = '128,128,128',
         value_layers_comma_sep: str = '128,128,128',
         eval_freq: int = 100000,
-        n_eval_episodes: int = 5,
+        n_eval_episodes: int = 40,
         rl_algorithm: RLAlgorithm = RLAlgorithm.ppo,
         n_envs: Optional[int] = None,
         batch_size: Optional[int] = None,
@@ -65,7 +67,10 @@ def train(
         td3_noise_type: Optional[str] = None,
         td3_noise_std: Optional[float] = None,
         use_sde: Optional[bool] = None,
-        sde_sample_freq: Optional[int] = None
+        sde_sample_freq: Optional[int] = None,
+        normalize=False,
+        normalize_advantage: Optional[bool] = None,
+        use_rms_prop: Optional[bool] = None,
 ):
     """Train an agent in the reacher environment.
 
@@ -105,16 +110,13 @@ def train(
     for path in [experiment_path, eval_path, tensorboard_log_path]:
         path.mkdir(exist_ok=True, parents=True)
 
-    environment_parameters = dict(
-        seed=env_seed,
-        no_graphics=True,
-        train_mode=True,
-        environment_port=environment_port)
-
-    if agent_type == SingleOrMultiAgent.single_agent:
-        env = UnitySingleAgentEnvironmentWrapper(**environment_parameters)
-    else:
-        env = UnityMultiAgentEnvironmentWrapper(n_envs=n_envs, **environment_parameters)
+    env = create_environment(
+        agent_type=agent_type,
+        normalize=normalize,
+        n_envs=n_envs,
+        env_seed=env_seed,
+        environment_port=environment_port,
+        training_mode=True)
 
     algorithm_class, policy = algorithm_and_policy[rl_algorithm]
 
@@ -141,7 +143,13 @@ def train(
                 target_kl=ppo_target_kl,
                 gae_lambda=ppo_a2c_gae_lambda,
                 n_epochs=ppo_n_epochs,
-                clip_range=ppo_clip_range)
+                clip_range=ppo_clip_range
+            )
+        elif rl_algorithm == RLAlgorithm.a2c:
+            algorithm_specific_parameters = dict(
+                normalize_advantage=normalize_advantage,
+                use_rms_prop=use_rms_prop
+            )
         elif rl_algorithm == RLAlgorithm.sac:
             algorithm_specific_parameters = dict(
                 buffer_size=td3_sac_buffer_size,
@@ -187,21 +195,46 @@ def train(
             **remove_none_entries(algorithm_specific_parameters)
         )
 
-    evaluation_parameters = (
-        dict(
-            eval_env=env,
-            eval_freq=eval_freq,
-            n_eval_episodes=n_eval_episodes,
-            eval_log_path=str(eval_path))
-        if agent_type == SingleOrMultiAgent.single_agent
-        else dict())
+    eval_callback = ReacherEvaluationCallback(
+        eval_env=env,
+        eval_freq=eval_freq,
+        n_eval_episodes=n_eval_episodes,
+        n_agents=n_envs if n_envs else 1,
+        eval_path=eval_path,
+        normalization=normalize
+    )
 
     model.learn(
         total_timesteps=total_timesteps,
-        **evaluation_parameters
+        callback=[eval_callback]
     )
 
     model.save(str(model_path))
+    model.get_vec_normalize_env().save(str(model_path / 'vecnormalize.pkl'))
+
+
+def create_environment(
+        agent_type: SingleOrMultiAgent,
+        normalize: bool,
+        n_envs: int,
+        environment_port: int,
+        training_mode: bool,
+        env_seed: Optional[int] = None):
+    environment_parameters = dict(
+        seed=env_seed,
+        no_graphics=True,
+        train_mode=training_mode,
+        environment_port=environment_port)
+
+    if agent_type == SingleOrMultiAgent.single_agent:
+        env = UnitySingleAgentEnvironmentWrapper(**environment_parameters)
+    else:
+        env = UnityMultiAgentEnvironmentWrapper(n_envs=n_envs, **environment_parameters)
+
+    if normalize:
+        env = VecNormalize(env, norm_reward=False)
+
+    return env
 
 
 def remove_none_entries(d):
