@@ -75,7 +75,7 @@ def run_trainings(
             experiment_name=experiment_name,
             agent_type=SingleOrMultiAgent.single_agent,
             rl_algorithm=algorithm,
-            total_timesteps=int(5e5),
+            total_timesteps=int(1e6),
             learning_rate=7.3e-4,
             td3_sac_buffer_size=300000,
             batch_size=256,
