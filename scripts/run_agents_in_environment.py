@@ -58,7 +58,7 @@ def run_environment(
         UnitySingleAgentEnvironmentWrapper(**environment_parameters)
         if agent_type == SingleOrMultiAgent.single_agent
         else UnityMultiAgentEnvironmentWrapper(**environment_parameters))
-    
+
     number_of_agents = env.num_envs
     action_size = env.action_space.shape[0]
 
