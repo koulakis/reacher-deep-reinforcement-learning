@@ -38,6 +38,7 @@ def run_trainings(
             agent_type=SingleOrMultiAgent.multi_agent,
             rl_algorithm=algorithm,
             normalize=True,
+            n_envs=4,
             total_timesteps=int(5e6),
             n_steps=8,
             gamma=0.99,
@@ -45,6 +46,10 @@ def run_trainings(
             learning_rate=3e-4,
             policy_layers_comma_sep='64,64',
             value_layers_comma_sep='64,64',
+            log_std_init=-2,
+            ppo_a2c_ortho_init=False,
+            normalize_advantage=False,
+            use_rms_prop=True,
             environment_port=port,
 
             use_sde=True

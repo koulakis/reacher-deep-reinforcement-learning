@@ -54,7 +54,7 @@ class ReacherEvaluationCallback(BaseCallback):
             if mean_reward > self.best_average_reward:
                 print(f'New best mean reward: {self.best_average_reward} -> {mean_reward}')
 
-                self.model.save(str(self.eval_path))
+                self.model.save(str(self.eval_path / 'best_model'))
                 if self.normalization:
                     normalization_path = str(self.eval_path / 'vecnormalize.pkl')
                     self.model.get_vec_normalize_env().save(normalization_path)

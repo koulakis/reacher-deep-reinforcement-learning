@@ -69,7 +69,8 @@ def train(
         use_sde: Optional[bool] = None,
         sde_sample_freq: Optional[int] = None,
         normalize=False,
-        eval_port_offset=1000
+        normalize_advantage: Optional[bool] = None,
+        use_rms_prop: Optional[bool] = None,
 ):
     """Train an agent in the reacher environment.
 
@@ -142,7 +143,13 @@ def train(
                 target_kl=ppo_target_kl,
                 gae_lambda=ppo_a2c_gae_lambda,
                 n_epochs=ppo_n_epochs,
-                clip_range=ppo_clip_range)
+                clip_range=ppo_clip_range
+            )
+        elif rl_algorithm == RLAlgorithm.a2c:
+            algorithm_specific_parameters = dict(
+                normalize_advantage=normalize_advantage,
+                use_rms_prop=use_rms_prop
+            )
         elif rl_algorithm == RLAlgorithm.sac:
             algorithm_specific_parameters = dict(
                 buffer_size=td3_sac_buffer_size,
