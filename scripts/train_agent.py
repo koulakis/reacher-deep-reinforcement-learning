@@ -209,7 +209,7 @@ def train(
         callback=[eval_callback]
     )
 
-    model.save(str(model_path))
+    model.save(str(model_path / model))
     model.get_vec_normalize_env().save(str(model_path / 'vecnormalize.pkl'))
 
 

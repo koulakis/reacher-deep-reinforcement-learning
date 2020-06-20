@@ -14,7 +14,7 @@ def run_trainings(
             rl_algorithm=algorithm,
             normalize=True,
             n_envs=16,
-            total_timesteps=int(2e6),
+            total_timesteps=int(3e6),
             batch_size=128,
             n_steps=512,
             gamma=0.99,
@@ -29,8 +29,8 @@ def run_trainings(
             ppo_target_kl=None,
             environment_port=port,
 
-            use_sde=True,
-            sde_sample_freq=4
+            # use_sde=True,
+            # sde_sample_freq=4
         )
     elif algorithm == RLAlgorithm.a2c:
         train(
@@ -52,7 +52,7 @@ def run_trainings(
             use_rms_prop=True,
             environment_port=port,
 
-            use_sde=True
+            # use_sde=True
         )
     elif algorithm == RLAlgorithm.td3:
         train(
