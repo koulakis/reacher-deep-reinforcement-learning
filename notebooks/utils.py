@@ -47,6 +47,7 @@ def plot_several_experiment_curves(
         colors = ['red', 'orange', 'green', 'blue', 'purple']
     
     for [title, path], color in zip(experiments, colors):
+        path = next(Path(path).glob('events*'))
         event_df = pandas_from_tf_events(path)
         plt.plot(
             event_df[x_index], 

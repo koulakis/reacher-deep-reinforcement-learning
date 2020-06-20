@@ -28,9 +28,8 @@ def run_trainings(
             ppo_a2c_ortho_init=True,
             ppo_target_kl=None,
             environment_port=port,
-
-            # use_sde=True,
-            # sde_sample_freq=4
+            use_sde=True,
+            sde_sample_freq=4
         )
     elif algorithm == RLAlgorithm.a2c:
         train(
@@ -51,8 +50,7 @@ def run_trainings(
             normalize_advantage=False,
             use_rms_prop=True,
             environment_port=port,
-
-            # use_sde=True
+            use_sde=True
         )
     elif algorithm == RLAlgorithm.td3:
         train(
@@ -88,7 +86,6 @@ def run_trainings(
             policy_layers_comma_sep='400,300',
             value_layers_comma_sep='400,300',
             environment_port=port,
-
             use_sde=True
         )
     else:
