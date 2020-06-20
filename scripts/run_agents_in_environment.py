@@ -1,13 +1,14 @@
 from typing import Optional
 import time
+from pathlib import Path
 
 import numpy as np
 import typer
 import torch
-from stable_baselines3.ppo import PPO
+from stable_baselines3.common.vec_env import VecNormalize
 
-from reacher.unity_environment_wrappers import \
-    UnitySingleAgentEnvironmentWrapper, UnityMultiAgentEnvironmentWrapper, SingleOrMultiAgent
+from scripts.utils import create_environment, RLAlgorithm, algorithm_and_policy
+from reacher.unity_environment_wrappers import SingleOrMultiAgent
 
 
 DEVICE = torch.device('cpu')
@@ -23,20 +24,23 @@ class RandomAgent:
         return np.clip(actions, -1, 1)
 
 
-class PPOAgent:
-    def __init__(self, parameters_path: str = 'reacher_a2c'):
-        self.model = PPO.load(parameters_path)
+class TrainedAgent:
+    def __init__(self, algorithm: RLAlgorithm, parameters_path: str):
+        self.model = algorithm_and_policy[algorithm][0].load(parameters_path)
 
     def act(self, state: np.ndarray) -> np.ndarray:
         return self.model.predict(state)[0]
 
 
 def run_environment(
+        algorithm: RLAlgorithm = typer.Option(...),
         agent_type: SingleOrMultiAgent = SingleOrMultiAgent.single_agent,
-        agent_parameters_path: Optional[str] = None,
+        agent_parameters_path: Optional[Path] = None,
         random_agent: bool = False,
         seed: Optional[int] = None,
-        environment_port: Optional[int] = None
+        environment_port: Optional[int] = None,
+        normalize: bool = False,
+        n_envs: Optional[int] = None
 ):
     """Run the reacher environment and visualize the actions of the agents.
 
@@ -48,24 +52,24 @@ def run_environment(
         environment_port: the port used from python to communicate with the C# environment backend. By using different
             values, one can run multiple environments in parallel.
     """
-    environment_parameters = dict(
-        seed=seed,
-        train_mode=False,
-        no_graphics=False,
-        environment_port=environment_port
-    )
-    env = (
-        UnitySingleAgentEnvironmentWrapper(**environment_parameters)
-        if agent_type == SingleOrMultiAgent.single_agent
-        else UnityMultiAgentEnvironmentWrapper(**environment_parameters))
+    env = create_environment(
+        agent_type=agent_type,
+        normalize=False,
+        n_envs=n_envs,
+        env_seed=seed,
+        environment_port=environment_port,
+        training_mode=False,
+        no_graphics=False)
 
-    number_of_agents = env.num_envs
+    if normalize:
+        env = VecNormalize.load(str(agent_parameters_path.parent / 'vecnormalize.pkl'), env)
+
     action_size = env.action_space.shape[0]
 
     if random_agent:
-        agent = RandomAgent(number_of_agents=number_of_agents, action_size=action_size)
+        agent = RandomAgent(number_of_agents=n_envs, action_size=action_size)
     else:
-        agent = PPOAgent(agent_parameters_path)
+        agent = TrainedAgent(algorithm=algorithm, parameters_path=str(agent_parameters_path))
 
     score = 0
     state = env.reset()
