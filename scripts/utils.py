@@ -46,6 +46,6 @@ def create_environment(
         env = UnityMultiAgentEnvironmentWrapper(n_envs=n_envs, **environment_parameters)
 
     if normalize:
-        env = VecNormalize(env, norm_reward=False)
+        env = VecNormalize(env, norm_reward=training_mode)
 
     return env

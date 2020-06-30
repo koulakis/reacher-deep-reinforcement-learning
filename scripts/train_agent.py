@@ -51,6 +51,7 @@ def train(
         normalize=False,
         normalize_advantage: Optional[bool] = None,
         use_rms_prop: Optional[bool] = None,
+        activation_function: Optional[str] = None
 ):
     """Train an agent in the reacher environment.
 
@@ -112,7 +113,7 @@ def train(
             else [dict(vf=value_layers, pi=policy_layers)])
 
         policy_kwargs = remove_none_entries(dict(
-            activation_fn=nn.ReLU,
+            activation_fn=nn.ReLU if activation_function == 'ReLU' else None,
             net_arch=net_arch,
             log_std_init=log_std_init,
             ortho_init=ppo_a2c_ortho_init)

@@ -27,9 +27,11 @@ class RandomAgent:
 class TrainedAgent:
     def __init__(self, algorithm: RLAlgorithm, parameters_path: str):
         self.model = algorithm_and_policy[algorithm][0].load(parameters_path)
+        self.model.use_sde = False
+        self.model.sde_sample_freq = -1
 
     def act(self, state: np.ndarray) -> np.ndarray:
-        return self.model.predict(state)[0]
+        return self.model.predict(state, deterministic=True)[0]
 
 
 def run_environment(
