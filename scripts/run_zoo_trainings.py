@@ -14,7 +14,7 @@ def run_trainings(
             rl_algorithm=algorithm,
             normalize=True,
             n_envs=16,
-            total_timesteps=int(3e6),
+            total_timesteps=int(2e6),
             batch_size=128,
             n_steps=512,
             gamma=0.99,
@@ -25,11 +25,12 @@ def run_trainings(
             policy_layers_comma_sep='256,256',
             value_layers_comma_sep='256,256',
             log_std_init=-2,
-            ppo_a2c_ortho_init=True,
+            ppo_a2c_ortho_init=False,
             ppo_target_kl=None,
             environment_port=port,
             use_sde=True,
-            sde_sample_freq=4
+            sde_sample_freq=4,
+            activation_function='ReLU'
         )
     elif algorithm == RLAlgorithm.a2c:
         train(
@@ -38,7 +39,7 @@ def run_trainings(
             rl_algorithm=algorithm,
             normalize=True,
             n_envs=4,
-            total_timesteps=int(5e6),
+            total_timesteps=int(2e6),
             n_steps=8,
             gamma=0.99,
             ppo_a2c_gae_lambda=0.9,
@@ -50,7 +51,7 @@ def run_trainings(
             normalize_advantage=False,
             use_rms_prop=True,
             environment_port=port,
-            use_sde=True
+            use_sde=True,
         )
     elif algorithm == RLAlgorithm.td3:
         train(
