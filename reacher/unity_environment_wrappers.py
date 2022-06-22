@@ -202,6 +202,18 @@ class UnityMultiAgentEnvironmentWrapper(VecEnv):
                    np.array(info.local_done)[:n_envs]
         else:
             return info.vector_observations, np.array(info.rewards), np.array(info.local_done)
+    
+    def env_is_wrapped(self) -> List[bool]:
+        """
+        Check if environments are wrapped with a given wrapper.
+
+        :param method_name: The name of the environment method to invoke.
+        :param indices: Indices of envs whose method to call
+        :param method_args: Any positional arguments to provide in the call
+        :param method_kwargs: Any keyword arguments to provide in the call
+        :return: True if the env is wrapped, False otherwise, for each env queried.
+        """
+        pass
 
 
 def _setup_unity_environment(
