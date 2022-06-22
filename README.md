@@ -39,14 +39,14 @@ git clone git@github.com:koulakis/reacher-deep-reinforcement-learning.git
 cd reacher-reinforcement-learning
 pip install .
 ```
-- Create a directory called `udacity_reacher_environment_single_agent` or `udacity_reacher_environment_multi_agent` (to use with the single or 20 agent environments respectively)
+- Create a directory called `unity_reacher_environment_single_agent` or `unity_reacher_environment_multi_agent` (to use with the single or 20 agent environments respectively)
 under the root of the project and download and extract there the environment compatible with your architecture. 
 You can find the [download links here](https://github.com/udacity/deep-reinforcement-learning/tree/master/p2_continuous-control#getting-started).
-- Install a version of pytorch compatible with your architecture. The version used to develop the project was 1.5.0.
-e.g. `pip install pytorch==1.5.0`
+- Install a version of pytorch compatible with your architecture. The version used to develop the project was 1.5.2.
+e.g. `pip install pytorch==1.5.2`
 
 To check that everything is setup properly, run the following test which loads an environment and runs a random agent:
-`python scripts/run_agent_in_environment.py --random-agent`
+`python scripts/run_agents_in_environment.py --random-agent --algorithm=td3 --n-envs=1`
 
 or 
 
