@@ -20,6 +20,7 @@ setuptools.setup(
     packages=['scripts'],
     install_requires=[
         'tensorflow==1.15.2',
+        "tqdm",
         'mlagents',
         'numpy',
         'typer',
