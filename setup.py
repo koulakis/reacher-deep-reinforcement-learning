@@ -19,7 +19,7 @@ setuptools.setup(
     description="This is a solution for the second project of the Udacity deep reinforcement learning course.",
     packages=['scripts'],
     install_requires=[
-        'tensorflow==1.15.2',
+        'tensorflow==2.9.3',
         'mlagents',
         'numpy',
         'typer',
